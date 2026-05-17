@@ -1,9 +1,11 @@
-# Ritual Creator Tips
+# Ritual Scrapbook
 
-Tip any X creator on Ritual testnet with:
-- real X username lookup
-- real X profile picture pull
-- manual tip amount input (no fixed tiers)
+Ritual Scrapbook is an interactive, book-style dapp on Ritual testnet where users:
+- connect wallet
+- add username and PFP
+- write a story page
+- sign and submit onchain
+- view community pages one-by-one
 
 ## Setup
 
@@ -21,8 +23,9 @@ cp .env.example .env.local
 
 3. Fill `.env.local`
 
-- `X_BEARER_TOKEN`: X API bearer token for user lookup
-- `NEXT_PUBLIC_TIP_JAR_ADDRESS`: deployed `CreatorTipJar` contract address on Ritual
+- `X_BEARER_TOKEN`: X API bearer token (optional if you use manual form input only)
+- `NEXT_PUBLIC_SCRAPBOOK_CONTRACT_ADDRESS`: scrapbook contract address (optional)
+- `NEXT_PUBLIC_SCRAPBOOK_RECEIVER_ADDRESS`: fallback receiver address for fee transfer (optional)
 
 4. Run app
 
@@ -32,15 +35,8 @@ npm run dev
 
 Open `http://localhost:3000`.
 
-## Contract
-
-Escrow contract source:
-- `contracts/CreatorTipJar.sol`
-
-Frontend calls this function:
-- `tipCreator(string username, string xUserId, string profileImageUrl, string message)` with payable value
-
 ## Notes
 
-- This version uses escrow model (option 1): tips accumulate in contract balance and are tracked per username.
-- Creator claim flow (prove X ownership + withdraw) can be added next.
+- Network: Ritual Chain (`1979`)
+- RPC: `https://rpc.ritualfoundation.org`
+- Explorer: `https://explorer.ritualfoundation.org`
