@@ -402,16 +402,22 @@ export default function Home() {
                       <p className="mt-4 text-[#5e4a35]">No pages yet. Be the first one with the + button.</p>
                     </div>
                   ) : (
-                    <div>
-                      <h2 className="text-4xl font-semibold">Page {currentPage - 2}</h2>
-                      <div className="mt-4 rounded-md border border-[#bca783] bg-white/60 p-3">
+                    <div className="relative">
+                      <div className="absolute right-0 top-0 text-xs font-semibold tracking-wider text-[#9d8965] bg-[#ece2cb]/40 px-2 py-0.5 rounded border border-[#bca783]/30">
+                        PAGE {currentPage - 2}
+                      </div>
+                      <div className="mt-8 rounded-md border border-[#bca783] bg-white/60 p-3">
                         <div className="flex items-center gap-3">
-                          <Image
-                            src={`/api/avatar?url=${encodeURIComponent(entries[Math.min(currentPage - 3, entries.length - 1)].pfp)}`}
+                          <img
+                            src={
+                              entries[Math.min(currentPage - 3, entries.length - 1)].pfp.startsWith("data:")
+                                ? entries[Math.min(currentPage - 3, entries.length - 1)].pfp
+                                : `/api/avatar?url=${encodeURIComponent(entries[Math.min(currentPage - 3, entries.length - 1)].pfp)}`
+                            }
                             alt={entries[Math.min(currentPage - 3, entries.length - 1)].username}
                             width={44}
                             height={44}
-                            className="rounded-full"
+                            className="rounded-full h-11 w-11 object-cover"
                           />
                           <div>
                             <p className="font-semibold">@{entries[Math.min(currentPage - 3, entries.length - 1)].username}</p>
