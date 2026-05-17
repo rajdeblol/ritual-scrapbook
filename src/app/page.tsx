@@ -156,7 +156,8 @@ export default function Home() {
       return;
     }
 
-    const value = parseEther("0.001");
+    const fee = "0.001";
+    const value = parseEther(fee);
 
     setSubmitting(true);
     try {
@@ -194,7 +195,7 @@ export default function Home() {
         return;
       }
 
-        const nextEntry: ScrapEntry = {
+      const nextEntry: ScrapEntry = {
         username: cleanUsername,
         pfp: authorPfp,
         message: composeMessage.trim(),
@@ -203,16 +204,21 @@ export default function Home() {
         txHash: hash,
         createdAt: Date.now(),
       };
-        setEntries((prev) => [...prev, nextEntry]);
+      setEntries((prev) => {
+        const updated = [...prev, nextEntry];
+        // Page mapping: 0 cover, 1 invitation, 2 instructions, 3+ user pages
+        const newEntryPage = updated.length + 2;
+        setIsBookOpen(true);
+        setCurrentPage(newEntryPage);
+        return updated;
+      });
 
       setShowComposer(false);
       setComposeUsername("");
       setComposeMessage("");
       setComposePfp("");
       setComposeSignature("");
-      setIsBookOpen(true);
-      setCurrentPage(5);
-      setStatus("Page sealed and added to scrapbook.");
+      setStatus(`Signed, paid ${fee} RITUAL on testnet, and added to scrapbook.`);
     } catch (error) {
       setStatus(`Seal failed: ${String(error)}`);
     } finally {
@@ -487,8 +493,9 @@ export default function Home() {
                   disabled={submitting}
                   className="rounded-md bg-[linear-gradient(90deg,#1a6f50_0%,#1f8f63_100%)] px-4 py-3 font-['Bodoni_MT','Didot','Times_New_Roman',serif] text-4xl font-semibold text-[#f2fff9] shadow-[0_12px_24px_rgba(16,73,52,0.3)] disabled:opacity-60"
                 >
-                  {submitting ? "Signing..." : "Sign"}
+                  {submitting ? "Signing & Paying..." : "Sign"}
                 </button>
+                <p className="text-center text-xs text-[#2d6b4e]">A fixed testnet fee of 0.001 RITUAL is charged on submit.</p>
                 {composeSignature && <p className="text-xs text-[#2d6b4e]">Signed ✓</p>}
               </div>
             </div>
