@@ -440,7 +440,7 @@ export default function Home() {
                         <div className="w-12 h-[1px] bg-[#bca783]/40 my-0.5" />
                         
                         <p className="text-[#3f3122] italic leading-relaxed text-sm font-medium px-1">
-                          "{entries[Math.min(currentPage - 3, entries.length - 1)].message}"
+                          &quot;{entries[Math.min(currentPage - 3, entries.length - 1)].message}&quot;
                         </p>
 
                         {entries[Math.min(currentPage - 3, entries.length - 1)].signature && (
