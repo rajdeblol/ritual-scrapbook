@@ -167,16 +167,23 @@ export default function Home() {
       })) as string;
       setComposeSignature(sig);
 
+      // 600ms delay to allow wallet (e.g. Rabby) window transitions to settle
+      await new Promise((resolve) => setTimeout(resolve, 600));
+
       const walletClient = createWalletClient({ transport: custom(window.ethereum) });
       const accounts = (await window.ethereum.request({ method: "eth_accounts" })) as `0x${string}`[];
       const account = accounts[0] || (wallet as `0x${string}`);
       let hash: `0x${string}`;
       const authorPfp = composePfp || "https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png";
 
-      if (SCRAPBOOK_CONTRACT_ADDRESS) {
+      const isContractValid = SCRAPBOOK_CONTRACT_ADDRESS && 
+                              SCRAPBOOK_CONTRACT_ADDRESS.startsWith("0x") && 
+                              !SCRAPBOOK_CONTRACT_ADDRESS.includes("YourScrapbookContractAddress");
+
+      if (isContractValid) {
         hash = await walletClient.writeContract({
           chain: undefined,
-          address: SCRAPBOOK_CONTRACT_ADDRESS,
+          address: SCRAPBOOK_CONTRACT_ADDRESS!,
           abi: scrapbookAbi,
           functionName: "submitScrapbook",
           account,
@@ -184,8 +191,22 @@ export default function Home() {
           value,
         });
       } else {
-        const receiver = SCRAPBOOK_RECEIVER_ADDRESS ?? account;
-        hash = await walletClient.sendTransaction({ chain: undefined, account, to: receiver, value });
+        const isReceiverValid = SCRAPBOOK_RECEIVER_ADDRESS && 
+                                SCRAPBOOK_RECEIVER_ADDRESS.startsWith("0x") && 
+                                !SCRAPBOOK_RECEIVER_ADDRESS.includes("YourReceiverAddress");
+        const receiver = isReceiverValid ? SCRAPBOOK_RECEIVER_ADDRESS! : account;
+
+        // Native JSON-RPC call to completely bypass any viem strict type or gas errors on custom testnets
+        hash = (await window.ethereum.request({
+          method: "eth_sendTransaction",
+          params: [
+            {
+              from: account,
+              to: receiver,
+              value: "0x38D7EA4C68000",
+            },
+          ],
+        })) as `0x${string}`;
       }
 
       const nextEntry: ScrapEntry = {
