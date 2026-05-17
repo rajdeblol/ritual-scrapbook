@@ -29,6 +29,16 @@ const SCRAPBOOK_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_SCRAPBOOK_CONTRACT_AD
 const SCRAPBOOK_RECEIVER_ADDRESS = process.env.NEXT_PUBLIC_SCRAPBOOK_RECEIVER_ADDRESS as `0x${string}` | undefined;
 const CHAIN_HEX = `0x${CHAIN_ID.toString(16)}`;
 
+const ritualChain = {
+  id: CHAIN_ID,
+  name: "Ritual Chain",
+  nativeCurrency: { name: "Ritual", symbol: "RITUAL", decimals: 18 },
+  rpcUrls: {
+    default: { http: [RPC_URL] },
+    public: { http: [RPC_URL] },
+  },
+} as const;
+
 const scrapbookAbi = [
   {
     type: "function",
@@ -207,9 +217,9 @@ export default function Home() {
                                   !SCRAPBOOK_CONTRACT_ADDRESS.includes("YourScrapbookContractAddress");
 
           if (isContractValid) {
-            const walletClient = createWalletClient({ transport: custom(window.ethereum!) });
+            const walletClient = createWalletClient({ chain: ritualChain, transport: custom(window.ethereum!) });
             hash = await walletClient.writeContract({
-              chain: undefined,
+              chain: ritualChain,
               address: SCRAPBOOK_CONTRACT_ADDRESS!,
               abi: scrapbookAbi,
               functionName: "submitScrapbook",
