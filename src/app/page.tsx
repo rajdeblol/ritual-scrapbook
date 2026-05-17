@@ -402,12 +402,13 @@ export default function Home() {
                       <p className="mt-4 text-[#5e4a35]">No pages yet. Be the first one with the + button.</p>
                     </div>
                   ) : (
-                    <div className="relative">
+                    <div className="relative flex flex-col justify-center min-h-[360px] py-4">
                       <div className="absolute right-0 top-0 text-xs font-semibold tracking-wider text-[#9d8965] bg-[#ece2cb]/40 px-2 py-0.5 rounded border border-[#bca783]/30">
                         PAGE {currentPage - 2}
                       </div>
-                      <div className="mt-8 rounded-md border border-[#bca783] bg-white/60 p-3">
-                        <div className="flex items-center gap-3">
+                      
+                      <div className="mt-6 mx-auto w-full max-w-[320px] rounded-xl border border-[#c4b08b] bg-white/75 p-6 shadow-[0_8px_20px_rgba(40,30,15,0.06)] flex flex-col items-center text-center gap-4 transition-all duration-300 hover:shadow-[0_12px_24px_rgba(40,30,15,0.09)]">
+                        <div className="relative">
                           <img
                             src={
                               entries[Math.min(currentPage - 3, entries.length - 1)].pfp.startsWith("data:")
@@ -415,26 +416,39 @@ export default function Home() {
                                 : `/api/avatar?url=${encodeURIComponent(entries[Math.min(currentPage - 3, entries.length - 1)].pfp)}`
                             }
                             alt={entries[Math.min(currentPage - 3, entries.length - 1)].username}
-                            width={44}
-                            height={44}
-                            className="rounded-full h-11 w-11 object-cover"
+                            className="rounded-full h-20 w-20 object-cover border-2 border-[#1d5a3d] p-0.5 shadow-sm"
                           />
-                          <div>
-                            <p className="font-semibold">@{entries[Math.min(currentPage - 3, entries.length - 1)].username}</p>
-                            <p className="text-xs text-[#6a563f]">{new Date(entries[Math.min(currentPage - 3, entries.length - 1)].createdAt).toLocaleString()}</p>
-                          </div>
                         </div>
-                        <p className="mt-3 text-[#3f3122]">{entries[Math.min(currentPage - 3, entries.length - 1)].message}</p>
-                        {entries[Math.min(currentPage - 3, entries.length - 1)].memoryPhoto && (
+                        
+                        <div className="flex flex-col items-center">
+                          <p className="font-semibold text-lg text-[#1d5a3d] leading-none">@{entries[Math.min(currentPage - 3, entries.length - 1)].username}</p>
+                          <p className="text-[10px] text-[#8a765f] mt-1.5 font-medium">{new Date(entries[Math.min(currentPage - 3, entries.length - 1)].createdAt).toLocaleString()}</p>
+                        </div>
+                        
+                        <div className="w-12 h-[1px] bg-[#bca783]/40 my-0.5" />
+                        
+                        <p className="text-[#3f3122] italic leading-relaxed text-sm font-medium px-1">
+                          "{entries[Math.min(currentPage - 3, entries.length - 1)].message}"
+                        </p>
+
+                        {entries[Math.min(currentPage - 3, entries.length - 1)].signature && (
+                          <div className="mt-1.5 text-[9px] tracking-wider text-[#9d8965] font-mono uppercase bg-[#ece2cb]/40 px-2 py-0.5 rounded border border-[#bca783]/20">
+                            SEALED ON RITUAL ✓
+                          </div>
+                        )}
+                      </div>
+                      
+                      {entries[Math.min(currentPage - 3, entries.length - 1)].memoryPhoto && (
+                        <div className="mt-4 max-w-[320px] mx-auto">
                           <Image
                             src={entries[Math.min(currentPage - 3, entries.length - 1)].memoryPhoto as string}
                             alt="Memory"
                             width={320}
                             height={190}
-                            className="mt-3 h-auto w-full rounded-md border border-[#bca783] object-cover"
+                            className="rounded-md border border-[#bca783] object-cover"
                           />
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </div>
                   )}
                   {status && <p className="mt-4 text-sm text-[#4c3a28]">{status}</p>}
