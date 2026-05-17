@@ -596,7 +596,17 @@ export default function Home() {
             </div>
           </div>
         )}
-        <p className="text-xs tracking-[0.18em] text-emerald-100/70">FRONT PAGE GUIDE</p>
+        <p className="text-xs tracking-[0.12em] text-emerald-100/70">
+          Built with <span className="text-rose-500 font-semibold">♥</span> by{" "}
+          <a
+            href="https://x.com/rajlol01"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-bold underline hover:text-emerald-300 transition-colors"
+          >
+            Rajlol
+          </a>
+        </p>
       </div>
     </main>
   );
