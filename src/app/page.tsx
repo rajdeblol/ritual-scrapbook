@@ -473,14 +473,26 @@ export default function Home() {
 
             <button
               onClick={nextPage}
-              className={`absolute inset-y-0 left-0 z-20 w-full origin-left rounded-[20px] border border-emerald-900/45 bg-[radial-gradient(circle_at_65%_55%,#1e8f61_0%,#1a6f50_46%,#144f39_100%)] p-8 text-left text-emerald-50 shadow-[0_35px_90px_rgba(5,27,20,0.72)] transition-[transform,box-shadow,width] duration-700 ease-[cubic-bezier(0.22,0.61,0.36,1)] ${
+              className={`absolute inset-y-0 left-0 z-20 w-full origin-left rounded-[20px] border border-emerald-950 bg-emerald-950 p-8 text-left text-emerald-50 shadow-[0_35px_90px_rgba(5,27,20,0.72)] transition-[transform,box-shadow,width] duration-700 ease-[cubic-bezier(0.22,0.61,0.36,1)] overflow-hidden ${
                 isBookOpen
                   ? "pointer-events-none w-[48%] [transform:translateX(-10px)_rotateY(-176deg)] shadow-[0_15px_40px_rgba(0,0,0,0.45)]"
                   : "w-full [transform:rotateY(0deg)]"
               }`}
               style={{ transformStyle: "preserve-3d", backfaceVisibility: "hidden" }}
             >
-              <div className="relative flex h-full flex-col items-center justify-center rounded-xl border-2 border-emerald-200/35 p-5 text-center">
+              {/* Cover background image with green leather overlay */}
+              <div className="absolute inset-0 z-0 pointer-events-none">
+                <img
+                  src="/ritual-logo.jpg"
+                  alt="Ritual Cover Background"
+                  className="w-full h-full object-cover opacity-[0.35] filter brightness-[0.7] contrast-[1.2] grayscale hover:scale-105 transition-transform duration-[10s] ease-out"
+                />
+                {/* Emerald gradient overlay matching cover color */}
+                <div className="absolute inset-0 bg-gradient-to-tr from-[#0b241c]/95 via-[#133d30]/80 to-[#0b241c]/95 mix-blend-multiply" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_20%,rgba(11,36,28,0.9)_100%)]" />
+              </div>
+
+              <div className="relative z-10 flex h-full flex-col items-center justify-center rounded-xl border-2 border-emerald-200/35 p-5 text-center">
                 <p className="absolute left-5 top-5 text-sm tracking-[0.2em] text-emerald-100/85">COMMUNITY EDITION · 2026</p>
                 <h1 className="max-w-[520px] font-['Bodoni_MT','Didot','Times_New_Roman',serif] text-7xl font-semibold leading-[0.86] tracking-tight text-emerald-50">
                   Ritual Scrapbook
