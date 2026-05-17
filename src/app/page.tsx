@@ -28,6 +28,27 @@ const RPC_URL = process.env.NEXT_PUBLIC_RITUAL_RPC_URL ?? "https://rpc.ritualfou
 const SCRAPBOOK_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_SCRAPBOOK_CONTRACT_ADDRESS as `0x${string}` | undefined;
 const SCRAPBOOK_RECEIVER_ADDRESS = process.env.NEXT_PUBLIC_SCRAPBOOK_RECEIVER_ADDRESS as `0x${string}` | undefined;
 const CHAIN_HEX = `0x${CHAIN_ID.toString(16)}`;
+const FIXED_FEE_RITUAL = "0.001";
+const ritualChain = {
+  id: CHAIN_ID,
+  name: "Ritual Chain",
+  nativeCurrency: {
+    name: "Ritual",
+    symbol: "RITUAL",
+    decimals: 18,
+  },
+  rpcUrls: {
+    default: {
+      http: [RPC_URL],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: "Ritual Explorer",
+      url: "https://explorer.ritualfoundation.org",
+    },
+  },
+} as const;
 
 const scrapbookAbi = [
   {
@@ -156,8 +177,12 @@ export default function Home() {
       return;
     }
 
-    const fee = "0.001";
+    const fee = FIXED_FEE_RITUAL;
     const value = parseEther(fee);
+    if (!SCRAPBOOK_CONTRACT_ADDRESS && !SCRAPBOOK_RECEIVER_ADDRESS) {
+      setStatus("Fee receiver is not configured. Set NEXT_PUBLIC_SCRAPBOOK_RECEIVER_ADDRESS.");
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -167,6 +192,7 @@ export default function Home() {
         params: [payload, wallet],
       })) as string;
       setComposeSignature(sig);
+      setStatus("Signature confirmed. Please approve the transaction to pay fee.");
 
       const walletClient = createWalletClient({ transport: custom(window.ethereum) });
       const [account] = await walletClient.getAddresses();
@@ -175,7 +201,7 @@ export default function Home() {
 
       if (SCRAPBOOK_CONTRACT_ADDRESS) {
         hash = await walletClient.writeContract({
-          chain: undefined,
+          chain: ritualChain,
           address: SCRAPBOOK_CONTRACT_ADDRESS,
           abi: scrapbookAbi,
           functionName: "submitScrapbook",
@@ -184,8 +210,8 @@ export default function Home() {
           value,
         });
       } else {
-        const receiver = SCRAPBOOK_RECEIVER_ADDRESS ?? account;
-        hash = await walletClient.sendTransaction({ chain: undefined, account, to: receiver, value });
+        const receiver = SCRAPBOOK_RECEIVER_ADDRESS as `0x${string}`;
+        hash = await walletClient.sendTransaction({ chain: ritualChain, account, to: receiver, value });
       }
 
       const publicClient = createPublicClient({ transport: http(RPC_URL) });
