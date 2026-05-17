@@ -322,15 +322,20 @@ export default function Home() {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#0d2a20] bg-[radial-gradient(circle_at_30%_12%,rgba(82,182,126,0.25),transparent_42%),repeating-linear-gradient(90deg,#112f24_0,#112f24_12px,#0e271e_12px,#0e271e_26px)] px-4 py-8 text-stone-100">
-      <div className="pointer-events-none absolute inset-0">
-        <Image
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden">
+        {/* Deep ambient glow aura */}
+        <div className="absolute w-[650px] h-[650px] bg-emerald-500/20 rounded-full blur-[130px]" />
+        
+        {/* Pulsing high-fidelity blurred background logo */}
+        <img
           src="/ritual-logo.jpg"
-          alt="Ritual glow background"
-          fill
-          className="object-contain opacity-25 blur-2xl [transform:scale(1.18)]"
-          priority
+          alt="Ritual Logo Background"
+          className="w-[450px] h-[450px] object-contain opacity-[0.35] blur-[40px] animate-pulse"
+          style={{ animationDuration: '8s' }}
         />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(104,214,150,0.2)_0%,rgba(14,39,30,0.78)_62%,rgba(9,25,19,0.92)_100%)]" />
+        
+        {/* Soft layout overlay for text contrast */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#081813]/98 via-[#0c241c]/75 to-[#081813]/98" />
       </div>
       <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-5">
         <p className="text-center text-sm tracking-[0.28em] text-emerald-100/80">RITUAL SCRAPBOOK · TESTNET</p>
@@ -367,16 +372,23 @@ export default function Home() {
 
             <div className={`absolute inset-0 rounded-[22px] border border-amber-900/40 bg-[linear-gradient(110deg,#ebddc1_0%,#e6d6b6_52%,#dbc59e_100%)] p-6 text-[#2e2419] shadow-[0_36px_90px_rgba(0,0,0,0.62)] transition-opacity duration-300 md:p-8 ${showSpread ? "opacity-100" : "opacity-0"}`}>
               <div className="grid h-full grid-cols-2 gap-4">
-                <section className="rounded-xl border border-[#c0ab83] bg-[linear-gradient(120deg,#f6ecd7_0%,#f0e2c5_100%)] p-5">
-                  <div className="h-full rounded-md border border-[#c8b492] bg-[repeating-linear-gradient(to_bottom,rgba(72,117,92,0.15)_0px,rgba(72,117,92,0.15)_1px,transparent_1px,transparent_54px)] px-6 py-5">
+                <section className="relative rounded-xl border border-[#c0ab83] bg-[linear-gradient(120deg,#f6ecd7_0%,#f0e2c5_100%)] p-5 overflow-hidden">
+                  <div className="absolute inset-0 pointer-events-none opacity-[0.035] flex items-center justify-center p-8">
+                    <img src="/ritual-logo.jpg" alt="Watermark" className="w-[200px] h-[200px] object-contain grayscale" />
+                  </div>
+                  <div className="relative h-full rounded-md border border-[#c8b492] bg-[repeating-linear-gradient(to_bottom,rgba(72,117,92,0.15)_0px,rgba(72,117,92,0.15)_1px,transparent_1px,transparent_54px)] px-6 py-5">
                     <h3 className="text-4xl font-semibold uppercase tracking-tight text-[#1d5a3d]">Ritual Scrapbook</h3>
                     <p className="mt-5 text-xl italic leading-[1.5] text-[#244f3c]">
                       A curated ledger of community stories, sealed on Ritual Testnet page by page.
                     </p>
                   </div>
                 </section>
-                <section className="rounded-xl border border-[#c0ab83] bg-[linear-gradient(120deg,#f8efd9_0%,#f2e5cb_100%)] p-5">
-                  {currentPage <= 1 ? (
+                <section className="relative rounded-xl border border-[#c0ab83] bg-[linear-gradient(120deg,#f8efd9_0%,#f2e5cb_100%)] p-5 overflow-hidden">
+                  <div className="absolute inset-0 pointer-events-none opacity-[0.035] flex items-center justify-center p-8">
+                    <img src="/ritual-logo.jpg" alt="Watermark" className="w-[200px] h-[200px] object-contain grayscale" />
+                  </div>
+                  <div className="relative h-full">
+                    {currentPage <= 1 ? (
                     <div>
                       <h2 className="text-5xl font-semibold text-[#1d5a3d]">The Invitation</h2>
                       <p className="mt-5 text-3xl italic leading-[1.45] text-[#244f3c]">
@@ -451,6 +463,7 @@ export default function Home() {
                       )}
                     </div>
                   )}
+                  </div>
                   {status && <p className="mt-4 text-sm text-[#4c3a28]">{status}</p>}
                 </section>
               </div>
