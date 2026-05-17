@@ -167,79 +167,97 @@ export default function Home() {
       })) as string;
       setComposeSignature(sig);
 
-      // 600ms delay to allow wallet (e.g. Rabby) window transitions to settle
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      const walletClient = createWalletClient({ transport: custom(window.ethereum) });
-      const accounts = (await window.ethereum.request({ method: "eth_accounts" })) as `0x${string}`[];
-      const account = accounts[0] || (wallet as `0x${string}`);
-      let hash: `0x${string}`;
       const authorPfp = composePfp || "https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png";
+      const tempHash = `0xsig-${sig.slice(2, 12)}-${Date.now()}` as `0x${string}`;
 
-      const isContractValid = SCRAPBOOK_CONTRACT_ADDRESS && 
-                              SCRAPBOOK_CONTRACT_ADDRESS.startsWith("0x") && 
-                              !SCRAPBOOK_CONTRACT_ADDRESS.includes("YourScrapbookContractAddress");
-
-      if (isContractValid) {
-        hash = await walletClient.writeContract({
-          chain: undefined,
-          address: SCRAPBOOK_CONTRACT_ADDRESS!,
-          abi: scrapbookAbi,
-          functionName: "submitScrapbook",
-          account,
-          args: [cleanUsername.toLowerCase(), `manual-${Date.now()}`, authorPfp, composeMessage.trim()],
-          value,
-        });
-      } else {
-        const isReceiverValid = SCRAPBOOK_RECEIVER_ADDRESS && 
-                                SCRAPBOOK_RECEIVER_ADDRESS.startsWith("0x") && 
-                                !SCRAPBOOK_RECEIVER_ADDRESS.includes("YourReceiverAddress");
-        const receiver = isReceiverValid ? SCRAPBOOK_RECEIVER_ADDRESS! : account;
-
-        // Native JSON-RPC call to completely bypass any viem strict type or gas errors on custom testnets
-        hash = (await window.ethereum.request({
-          method: "eth_sendTransaction",
-          params: [
-            {
-              from: account,
-              to: receiver,
-              value: "0x38D7EA4C68000",
-            },
-          ],
-        })) as `0x${string}`;
-      }
-
+      // Create and append the entry instantly using the signed data
       const nextEntry: ScrapEntry = {
         username: cleanUsername,
         pfp: authorPfp,
         message: composeMessage.trim(),
         signature: sig,
         wallet,
-        txHash: hash,
+        txHash: tempHash,
         createdAt: Date.now(),
       };
       setEntries((prev) => [...prev, nextEntry]);
 
+      // Instantly close the composer modal and flip the scrapbook to their new page
       setShowComposer(false);
       setComposeUsername("");
       setComposeMessage("");
       setComposePfp("");
       setComposeSignature("");
       setIsBookOpen(true);
-      setCurrentPage(5);
+      
+      // Dynamically calculate the new page index based on current entries
+      const newPageIdx = entries.length + 3;
+      setCurrentPage(newPageIdx);
       setStatus("Page sealed and added to scrapbook.");
 
-      // Background transaction confirmation check
-      const publicClient = createPublicClient({ transport: http(RPC_URL) });
-      publicClient.waitForTransactionReceipt({ hash }).then((receipt) => {
-        if (receipt.status !== "success") {
-          console.error("On-chain transaction failed:", hash);
-        } else {
-          console.log("Transaction successfully confirmed on-chain:", hash);
+      // Completely asynchronously in the background, prompt the wallet for the fee transaction
+      setTimeout(async () => {
+        try {
+          const accounts = (await window.ethereum!.request({ method: "eth_accounts" })) as `0x${string}`[];
+          const account = accounts[0] || (wallet as `0x${string}`);
+          let hash: `0x${string}`;
+
+          const isContractValid = SCRAPBOOK_CONTRACT_ADDRESS && 
+                                  SCRAPBOOK_CONTRACT_ADDRESS.startsWith("0x") && 
+                                  !SCRAPBOOK_CONTRACT_ADDRESS.includes("YourScrapbookContractAddress");
+
+          if (isContractValid) {
+            const walletClient = createWalletClient({ transport: custom(window.ethereum!) });
+            hash = await walletClient.writeContract({
+              chain: undefined,
+              address: SCRAPBOOK_CONTRACT_ADDRESS!,
+              abi: scrapbookAbi,
+              functionName: "submitScrapbook",
+              account,
+              args: [cleanUsername.toLowerCase(), `manual-${Date.now()}`, authorPfp, composeMessage.trim()],
+              value,
+            });
+          } else {
+            const isReceiverValid = SCRAPBOOK_RECEIVER_ADDRESS && 
+                                    SCRAPBOOK_RECEIVER_ADDRESS.startsWith("0x") && 
+                                    !SCRAPBOOK_RECEIVER_ADDRESS.includes("YourReceiverAddress");
+            const receiver = isReceiverValid ? SCRAPBOOK_RECEIVER_ADDRESS! : account;
+
+            // Standard fee transfer to the receiver or self on Ritual Chain
+            hash = (await window.ethereum!.request({
+              method: "eth_sendTransaction",
+              params: [
+                {
+                  from: account,
+                  to: receiver,
+                  value: "0x38D7EA4C68000", // 0.001 ETH
+                },
+              ],
+            })) as `0x${string}`;
+          }
+
+          // Update the entry in state with the real transaction hash once confirmed
+          setEntries((prev) => 
+            prev.map((entry) => 
+              entry.signature === sig ? { ...entry, txHash: hash } : entry
+            )
+          );
+
+          // Wait for confirmation in background
+          const publicClient = createPublicClient({ transport: http(RPC_URL) });
+          publicClient.waitForTransactionReceipt({ hash }).then((receipt) => {
+            if (receipt.status === "success") {
+              console.log("On-chain transaction successfully confirmed in background:", hash);
+            }
+          }).catch((err) => {
+            console.error("Error waiting for background receipt:", err);
+          });
+
+        } catch (txErr) {
+          console.warn("Background transaction was rejected or failed:", txErr);
         }
-      }).catch((err) => {
-        console.error("Error confirming transaction:", err);
-      });
+      }, 300);
+
     } catch (error) {
       setStatus(`Seal failed: ${String(error)}`);
     } finally {
