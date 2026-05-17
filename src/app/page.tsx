@@ -28,27 +28,6 @@ const RPC_URL = process.env.NEXT_PUBLIC_RITUAL_RPC_URL ?? "https://rpc.ritualfou
 const SCRAPBOOK_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_SCRAPBOOK_CONTRACT_ADDRESS as `0x${string}` | undefined;
 const SCRAPBOOK_RECEIVER_ADDRESS = process.env.NEXT_PUBLIC_SCRAPBOOK_RECEIVER_ADDRESS as `0x${string}` | undefined;
 const CHAIN_HEX = `0x${CHAIN_ID.toString(16)}`;
-const FIXED_FEE_RITUAL = "0.001";
-const ritualChain = {
-  id: CHAIN_ID,
-  name: "Ritual Chain",
-  nativeCurrency: {
-    name: "Ritual",
-    symbol: "RITUAL",
-    decimals: 18,
-  },
-  rpcUrls: {
-    default: {
-      http: [RPC_URL],
-    },
-  },
-  blockExplorers: {
-    default: {
-      name: "Ritual Explorer",
-      url: "https://explorer.ritualfoundation.org",
-    },
-  },
-} as const;
 
 const scrapbookAbi = [
   {
@@ -177,136 +156,69 @@ export default function Home() {
       return;
     }
 
-    const fee = FIXED_FEE_RITUAL;
-    const value = parseEther(fee);
-    if (!SCRAPBOOK_CONTRACT_ADDRESS && !SCRAPBOOK_RECEIVER_ADDRESS) {
-      setStatus("Fee receiver is not configured. Set NEXT_PUBLIC_SCRAPBOOK_RECEIVER_ADDRESS.");
-      return;
-    }
+    const value = parseEther("0.001");
 
     setSubmitting(true);
     try {
-      // Step 1: Ensure wallet is on the correct chain (Ritual Testnet)
-      const currentChainHex = (await window.ethereum.request({ method: "eth_chainId" })) as string;
-      const currentChain = Number.parseInt(currentChainHex, 16);
-      if (currentChain !== CHAIN_ID) {
-        setStatus("Switching network to Ritual Testnet...");
-        try {
-          await window.ethereum.request({
-            method: "wallet_switchEthereumChain",
-            params: [{ chainId: CHAIN_HEX }],
-          });
-        } catch (switchError) {
-          console.warn("Chain switch inside seal failed, trying to add chain:", switchError);
-          try {
-            await window.ethereum.request({
-              method: "wallet_addEthereumChain",
-              params: [
-                {
-                  chainId: CHAIN_HEX,
-                  chainName: "Ritual Chain",
-                  nativeCurrency: {
-                    name: "Ritual",
-                    symbol: "RITUAL",
-                    decimals: 18,
-                  },
-                  rpcUrls: [RPC_URL],
-                  blockExplorerUrls: ["https://explorer.ritualfoundation.org"],
-                },
-              ],
-            });
-            await window.ethereum.request({
-              method: "wallet_switchEthereumChain",
-              params: [{ chainId: CHAIN_HEX }],
-            });
-          } catch (addError) {
-            console.error("Add chain failed:", addError);
-            throw new Error("Please switch your wallet to Ritual Testnet manually.");
-          }
-        }
-      }
-
-      // Step 2: Request message signature
-      const accounts = (await window.ethereum.request({ method: "eth_accounts" })) as string[];
-      const activeAccount = (accounts[0] || wallet) as `0x${string}`;
-      if (!activeAccount) {
-        throw new Error("No connected account found. Please connect your wallet.");
-      }
-
-      setStatus("Step 1 of 2: requesting signature...");
       const payload = `Ritual Scrapbook Signature\nUsername: @${cleanUsername}\nMessage: ${composeMessage.trim()}\nTime: ${new Date().toISOString()}`;
       const sig = (await window.ethereum.request({
         method: "personal_sign",
-        params: [payload, activeAccount],
+        params: [payload, wallet],
       })) as string;
       setComposeSignature(sig);
 
-      // Step 3: Send RITUAL fee transaction
-      setStatus(`Step 2 of 2: sending ${fee} RITUAL fee transaction...`);
-
       const walletClient = createWalletClient({ transport: custom(window.ethereum) });
+      const accounts = (await window.ethereum.request({ method: "eth_accounts" })) as `0x${string}`[];
+      const account = accounts[0] || (wallet as `0x${string}`);
       let hash: `0x${string}`;
       const authorPfp = composePfp || "https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png";
 
       if (SCRAPBOOK_CONTRACT_ADDRESS) {
         hash = await walletClient.writeContract({
+          chain: undefined,
           address: SCRAPBOOK_CONTRACT_ADDRESS,
           abi: scrapbookAbi,
           functionName: "submitScrapbook",
-          account: activeAccount,
+          account,
           args: [cleanUsername.toLowerCase(), `manual-${Date.now()}`, authorPfp, composeMessage.trim()],
           value,
         });
       } else {
-        const receiver = SCRAPBOOK_RECEIVER_ADDRESS as `0x${string}`;
-        hash = await walletClient.sendTransaction({
-          account: activeAccount,
-          to: receiver,
-          value,
-        });
+        const receiver = SCRAPBOOK_RECEIVER_ADDRESS ?? account;
+        hash = await walletClient.sendTransaction({ chain: undefined, account, to: receiver, value });
       }
 
-      console.log("Transaction successfully signed and submitted. Hash:", hash);
-
-      // Step 4: Add entry and transition book immediately to the scrapbook page!
       const nextEntry: ScrapEntry = {
         username: cleanUsername,
         pfp: authorPfp,
         message: composeMessage.trim(),
         signature: sig,
-        wallet: activeAccount,
+        wallet,
         txHash: hash,
         createdAt: Date.now(),
       };
-
-      setEntries((prev) => {
-        const updated = [...prev, nextEntry];
-        // Page mapping: 0 cover, 1 invitation, 2 instructions, 3+ user pages
-        const newEntryPage = updated.length + 2;
-        setIsBookOpen(true);
-        setCurrentPage(newEntryPage);
-        return updated;
-      });
+      setEntries((prev) => [...prev, nextEntry]);
 
       setShowComposer(false);
       setComposeUsername("");
       setComposeMessage("");
       setComposePfp("");
       setComposeSignature("");
-      setStatus(`Signed, paid ${fee} RITUAL on testnet, and added to scrapbook!`);
+      setIsBookOpen(true);
+      setCurrentPage(5);
+      setStatus("Page sealed and added to scrapbook.");
 
-      // Monitor receipt in background so we don't freeze user interaction
+      // Background transaction confirmation check
       const publicClient = createPublicClient({ transport: http(RPC_URL) });
       publicClient.waitForTransactionReceipt({ hash }).then((receipt) => {
-        if (receipt.status === "success") {
-          console.log("Transaction successfully confirmed on-chain:", hash);
+        if (receipt.status !== "success") {
+          console.error("On-chain transaction failed:", hash);
         } else {
-          console.error("Transaction failed on-chain:", hash);
+          console.log("Transaction successfully confirmed on-chain:", hash);
         }
       }).catch((err) => {
-        console.error("Error waiting for transaction receipt:", err);
+        console.error("Error confirming transaction:", err);
       });
-
     } catch (error) {
       setStatus(`Seal failed: ${String(error)}`);
     } finally {
@@ -577,16 +489,13 @@ export default function Home() {
                 </div>
 
                 <button
-                  type="button"
                   onClick={sealAndAddPage}
                   disabled={submitting}
                   className="rounded-md bg-[linear-gradient(90deg,#1a6f50_0%,#1f8f63_100%)] px-4 py-3 font-['Bodoni_MT','Didot','Times_New_Roman',serif] text-4xl font-semibold text-[#f2fff9] shadow-[0_12px_24px_rgba(16,73,52,0.3)] disabled:opacity-60"
                 >
-                  {submitting ? "Signing & Paying..." : "Sign"}
+                  {submitting ? "Signing..." : "Sign"}
                 </button>
-                <p className="text-center text-xs text-[#2d6b4e]">A fixed testnet fee of 0.001 RITUAL is charged on submit.</p>
                 {composeSignature && <p className="text-xs text-[#2d6b4e]">Signed ✓</p>}
-                {status && <p className="text-center text-sm font-semibold text-[#1f5c41]">{status}</p>}
               </div>
             </div>
           </div>
